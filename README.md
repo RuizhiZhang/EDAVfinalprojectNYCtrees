@@ -5,5 +5,7 @@ Source: https://data.cityofnewyork.us/Environment/2015-Street-Tree-Census-Tree-D
 
 Download: https://data.cityofnewyork.us/api/views/uvpi-gqnh/rows.csv?accessType=DOWNLOAD
 
+Data Description: https://data.cityofnewyork.us/api/views/uvpi-gqnh/files/8705bfd6-993c-40c5-8620-0c81191c7e25?download=true&filename=StreetTreeCensus2015TreesDataDictionary20161102.pdf
+
 ## EDAV Report
 
