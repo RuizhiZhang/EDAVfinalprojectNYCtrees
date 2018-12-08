@@ -1,0 +1,52 @@
+---
+title: "project_missing value"
+author: "Ruizhi Zhang"
+date: "November 20, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Missing Value
+```{r}
+library(tidyverse)
+Tree<-read.csv("Tree_Data.csv")
+TreeSub<-Tree[,c('tree_dbh','curb_loc','status','health','spc_common','steward','guards','user_type','postcode','borough')]
+TreeSub[TreeSub=='']<-NA
+```
+## Barchart
+```{r}
+TreeMiss<-colSums(is.na(TreeSub)) 
+TreeMissPercent<-TreeMiss/length(TreeSub$tree_dbh)
+TreeValue<-names(TreeMissPercent)
+TreePercent<-unname(TreeMissPercent)
+TreeMissPer<-data.frame(TreeValue,TreePercent)
+ggplot(TreeMissPer, aes(x=reorder(TreeValue,-TreePercent),y=TreePercent)) + geom_bar(stat="identity",fill="lightblue")+ geom_text(aes(label=TreeMiss))
+```
+## Heatmap
+```{r}
+library(extracat)
+visna(TreeSub,sort="b")
+```
+## User Type
+```{r}
+TreeSub %>%
+  group_by(user_type) %>%
+  summarize(tree_spc_num_na = sum(is.na(`spc_common`))/n())
+
+TreeSub %>%
+  group_by(borough) %>%
+  summarize(tree_spc_num_na = sum(is.na(`spc_common`))/n())
+
+TreeSub %>%
+  group_by(status) %>%
+  summarize(tree_spc_num_na = sum(is.na(`spc_common`))/n())
+```
+## Outlier
+```{r}
+boxplot.stats(TreeSub$tree_dbh)[1]
+boxplot(TreeSub$tree_dbh, horizontal = TRUE)
+```
+

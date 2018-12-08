@@ -1,0 +1,109 @@
+---
+title: "Hmk4Q3"
+author: "Ruizhi Zhang"
+date: "November 9, 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## NYC Tree Census (Target Feature: Tree Diameter)
+Firstly, this is a histogram of the tree diameters with the regular sizes was plotted. Since more than 90% diameters fall in range (0, 30), we regarded these diameters are regular size and set them into category 'regular', and plot its histogram to see the distrbution. According to the histogram, we could see that the most diameters fall in small sizes. The largest value is 3, about 10%. The distribution appears to be positive skewed.
+```{r}
+library(tidyverse)
+Tree<-read.csv("Tree_Data.csv")
+sum(is.na(Tree$tree_dbh))
+# since tree_dbh = 0 is the stump, we remove them
+tree_dia<-Tree$tree_dbh[Tree$tree_dbh != 0]
+tree_type<-ifelse(tree_dia > 34, "others", "Regular")
+tree_new<-data.frame(tree_dia,tree_type)
+hist<-ggplot(subset(tree_new,tree_type%in% c("Regular")))+geom_histogram(aes(x=tree_dia,y=..density..),fill="lightblue",color="blue")+xlab("Tree Diameter")+labs(title="Histogram")
+hist
+```
+```{r}
+
+```
+Secondly, we draw the boxplot of the diameters faceted by the borough.
+```{r}
+ggplot(aes(x=reorder(borough,tree_dbh,FUN=median),y=tree_dbh,group=paste(borough),color=borough),data=Tree)+geom_boxplot()+
+  coord_flip()
+```
+```{r}
+
+```
+We meanly draw the regular sizes. According to the boxplot, Queens has the largest median of diameters. Queens and Brooklyn have a wider range of the diameters.Bronx and Manhattan have smallest diameters maybe because the urbanlization of the boroughs.  
+```{r}
+Tree["tree_type"]<-ifelse(Tree$tree_dbh < 34 & Tree$tree_dbh > 0, "regular","others")
+boroughbox<-ggplot(subset(Tree,tree_type %in% c("regular")))+geom_boxplot(aes(x=reorder(borough,tree_dbh,FUN=median),y=tree_dbh,group=paste(borough),color=borough))+
+  coord_flip()+ylab("Tree Diameters (Regular Size)") + xlab("Borough")+labs(title="Boxplot: Tree Diameters Vs. Borough")
+boroughbox
+```
+```{r}
+
+```
+Then, we draw the boxplot in terms of the health status. As a common sense, the larger the diameters are, the stronger the trees are. Therefore, the trees with good and fair status have the larger diameters.
+```{r}
+Tree$health[Tree$health==""]<-NA
+healthbox<-ggplot(subset(Tree,tree_type %in% c("regular")))+geom_boxplot(aes(x=reorder(health,tree_dbh,FUN=median),y=tree_dbh,group=paste(health),color=health))+
+  coord_flip() + xlab("Health") +ylab("Tree Diameters (Regular Size)")+labs(title="Boxplot: Tree Diameter vs. Health")
+healthbox
+```
+```{r}
+
+```
+Lastly, we categorized the regular sized trees into three categories: thin, median, thick. The rest are stump and giant. Being consistent with the results we got before, even Manhattan and Bronx have less trees, they own a large amount of the thinner trees b/c of the urbanlization.
+```{r}
+library(vcd)
+Tree$tree_type <- ifelse(Tree$tree_dbh<=11&Tree$tree_dbh>0,"thin",Tree$tree_type)
+Tree$tree_type <- ifelse(Tree$tree_dbh>11&Tree$tree_dbh<22,"median",Tree$tree_type)
+Tree$tree_type <- ifelse(Tree$tree_dbh>=22&Tree$tree_dbh<34,"thick",Tree$tree_type)
+Tree$tree_type <- ifelse(Tree$tree_dbh>=34,"giant",Tree$tree_type)
+Tree$tree_type <- ifelse(Tree$tree_dbh==0,"stump",Tree$tree_type)
+type<-Tree %>% 
+      group_by(tree_type) %>%
+      summarise(count=n()) 
+type[order(-type$count),]
+Tree$tree_type <- factor(Tree$tree_type, 
+                      levels = c("thin", "median","thick","giant","stump"))
+borough<-Tree %>% 
+      group_by(borough) %>%
+      summarise(count=n()) 
+borough[order(-borough$count),]
+Tree$borough <- factor(Tree$borough, 
+                      levels = c("Queens", "Brooklyn","Staten Island","Bronx","Manhattan"))
+fillcolors=c("cadetblue1","cadetblue2","cadetblue3","cadetblue","cadetblue4")
+mosaic(tree_type ~ borough, Tree,rot_labels = c(30, 0, 0, 0),gp=gpar(fill=fillcolors))
+```
+## Topcoding?
+```{r}
+mean(Tree$stump_diam[Tree$tree_dbh==0])
+mean(Tree$tree_dbh)
+mean(Tree$tree_dbh[Tree$tree_dbh!=0])
+
+```
+## Diameter vs. spc
+```{r}
+group<-Tree %>% 
+      group_by(spc_common) %>%
+      summarise(count=n()) 
+group[order(-group$count),]
+Tree[['spc']]<-Tree$spc_common
+for (i in levels(Tree$spc_common)){
+  if ((i %in% c("London planetree", "honeylocust","Callery pear","pin oak","Norway maple","littleleaf linden","cherry","Japanese zelkova","ginkgo"))==FALSE){
+      Tree<-Tree %>% 
+          mutate(spc = fct_recode(spc,OTHER=i))
+  }
+}
+mosaic(tree_type ~ spc, Tree,rot_labels = c(30, 0, 0, 0))
+Tree2<- Tree %>% filter(`spc` %in% c("London planetree", "honeylocust","Callery pear","pin oak","Norway maple","littleleaf linden","cherry","Japanese zelkova","ginkgo"))
+Tree2$spc <- factor(Tree2$spc, 
+                      levels = c("London planetree", "honeylocust","Callery pear","pin oak","Norway maple","littleleaf linden","cherry","Japanese zelkova","ginkgo"))
+Tree2$tree_type <- factor(Tree2$tree_type, 
+                      levels = c("thin", "median","thick","giant","stump"))
+mosaic(tree_type ~ spc, Tree2,rot_labels = c(30, 0, 0, 0),gp=gpar(fill=fillcolors))
+```
+
