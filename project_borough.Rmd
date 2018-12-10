@@ -1,0 +1,242 @@
+---
+title: "Project"
+author: "Yawen Han (yh3069)"
+date: "11/14/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---------------------------------------------------------------------------------------
+
+The dataset in my group's final project is "Street tree data" from the "TreesCount 2015 Street Tree Census", conducted by volunteers and staff organized by NYC Parks & Recreation and partner organizations. The link to the dataset is https://data.cityofnewyork.us/Environment/2015-Street-Tree-Census-Tree-Data/uvpi-gqnh.
+
+NYC is composed of five boroughs: Manhattan, Brooklyn, Queens, the Bronx and Staten Island. The borders that we associate with each of the five boroughs also form the county borders. The boroughs/counties are further divided into 59 community districts and hundreds of neighborhoods, with a definable history and character to call their own. 
+
+Therefore, the variable "borough" can be a interesting attribute to explore when considering the distribution of street trees in each area. In the following few sections, we will explore how the distributions of NYC street trees be affected by different variables from the census data based on five boroughs.
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(scales)
+#load data
+Tree<-read.csv("/Users/yawenhan/Downloads/2015_Street_Tree_Census_-_Tree_Data.csv")
+```
+
+####1. Total Street Tree Counts Per Borough (2015 NYC Street Tree Distribution per Borough)
+
+First, to generate a overview of NYC street tree counts in each borough, the barchart was plotted with y-axis show the total count of street trees for each borough in NYC 2015 and the x-axis show the borough name. For better comparision of street tree counts in different borough, the plot was shown in decreasing order of total counts.
+
+```{r, warning=FALSE, message=FALSE}
+Tree$borough<-factor(Tree$borough,levels=c("Queens", "Brooklyn", "Staten Island", "Bronx","Manhattan"))
+b<-Tree %>% group_by(borough) %>% summarise(n=n())
+# plot the barchart of total tree numbers by borough with a decreasing order
+ggplot(b,aes(x=fct_reorder(borough,n,.desc=TRUE),y=n))+
+  geom_bar(color="black",fill="lightblue",stat="identity")+
+  scale_y_continuous(labels = scientific)+
+  ggtitle("2015 NYC street tree total numbers per borough")+labs(x="",y="Total Number",caption="Figure 1: 2015 NYC street tree total counts per borough")
+```
+
+According to the bar chart above, the total number order of NYC borough is 'Queens', 'Brooklyn', 'Staten Island', 'Bronx' and 'Manhattan'. In year 2015, among all five boroughs, "Queens" had the largest number of street trees around 250,000, while "Manhattan" has the smallest number of street trees around 70,000, which is less than 1/3 of "Queens". Thus, the barchart above demonstrated the distinct differeence of street trees counts between five boroughs.
+
+####2. Each Borough Strret Counts vs. Land Area, Population
+
+In Figure 1 above, it demonstrated the distinct differeence of street trees counts between five boroughs. Thus, it’s interesting to furthur explore what cause the difference between the five boroughs, and the two most obvious are "Land Area" and "Population". Consideirng the difference of "Land Area" and "Population" between five boroughs, we will try to recognize whether there exist relationships between these three variables: "borough", "Land Area", and "Population".
+
+The data of "borough", "Land Area", and "Population" is shown in the table below:
+
+```{r}
+borough_info <- data.frame("Borough" = c("Queens","Brroklyn","Staten Island","Bronx","Manhattan"), "LandArea(mi2)" = c(109.7,71.5,58.5,42.4,22.8), "Population" = c(2230722,2504700,468730,1385108,1585873))
+borough_info$LandArea.mi2.=as.numeric(borough_info$LandArea.mi2.)
+borough_info$Population=as.numeric(borough_info$Population)
+borough_info$TreeCount=b$n
+borough_info
+```
+
+To investigate the possible relationship between variables "TreeCount", "Land Area", and "Population" based on borough, two scatter plot "TreeCount vs LandArea" and "TreeCount vs Population" were generated below:
+
+```{r}
+ggplot(borough_info, aes(x=LandArea.mi2., y=TreeCount)) +scale_y_continuous(labels = scientific)+ geom_point()+geom_text(label=borough_info$Borough,vjust = 1,hjust=0.35)+ggtitle("TreeCount vs LandArea")+labs( caption="Figure 2: TreeCount vs LandArea")
+```
+
+In Figure 2 above, the data points make a straight line going from the origin out to high x- and y-values, theerfore the two variables are said to have a positive correlation. It's reasonable to concluded that the TreeCount difference between five  boroughs are affected by the their LandArea.
+
+Next, the scatterplot between "TreeCount" and "Population" based on borough:
+
+```{r}
+ggplot(borough_info, aes(x=Population, y=TreeCount)) +scale_y_continuous(labels = scientific)+ geom_point()+geom_text(label=borough_info$Borough,vjust = 1,hjust=0.35)+scale_x_continuous(labels = scientific)+ggtitle("TreeCount vs Population")+labs( caption="Figure 3: TreeCount vs Population")
+```
+
+In Figure 3 above, the data points also clustered in a band running from lower left to upper right, indicating a positive correlation between "TreeCount" and "Population". However, as the data points had larger bias from a straight line compared to Figure 2, we can concluded that the "TreeCount"" of five boroughs had positive correlation with their "Population", but not as strong as "LandArea". 
+
+####3.User_type and Borough
+
+We may consider if the "user_type" (who count the trees) will influence the count result? In comnnon sense, the "Tree count staff" and "NYC Parks staff" are more professional and provide more reliable count results, while the "Volunteer" may provide a higher error rate result.
+
+Plot the grouped bar plot to explore the distribution of street trees of each user_type based on borough. "User_type" describes the category of user who collected this tree point's data. The order of bough in each group is based on the descending order of total count numbers obtatined in the above section.
+
+```{r, warning=FALSE, message=FALSE}
+
+ggplot(Tree, aes(x = borough,fill=user_type)) + 
+   geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]), position="dodge" ,color="black") +
+  scale_fill_manual(values = c("violet","lightblue","gold"))+ylab("Staff percentage(%)") + ggtitle("User_type distribution per borough")+labs(caption="Figure 4: User_type distribution per borough")
+
+```
+
+From the grouped bar plot above, the distribution of stree trees of different user_type based on borough are compared as follows:  
+
+  1)The user_type has different staff percentage reatio for five borough, which implies that the user_type ratio might have a relationship with the final TreeCount results;      
+  2)"Queens", the borough with most street trees counts, has its biggest user_type as "TreesCount Staff";    
+  3)"Manhatten", the borough with the least street trees, has its smallest user_type as "Volunteer".  
+  
+According to the observations above, the user_type did show somewhat relationship with the final TreeCount result. To investigate the possible relationship between two categorical variables, "user_type" and "TreeCount", the mosaic plot was generated below:
+
+```{r, warning=FALSE, message=FALSE}
+library(vcd)
+library(grid) # needed for gpar
+fillcolors <- c("violet","lightblue","gold") 
+Tree$borough<-factor(Tree$borough,levels=c("Queens", "Brooklyn", "Staten Island", "Bronx","Manhattan"))
+vcd::mosaic( user_type ~ borough, Tree, gp = gpar(fill = fillcolors), direction = c("v", "h"),tl_labels = c(TRUE, TRUE),labeling = labeling_border(gp_labels = gpar(fontsize = 10),gp_varnames = gpar(fontsize = 12,fontface = 2), rot_labels = c(30,0, 0, 0),rot_varnames = c(0,0,0,90), offset_varnames = c(0.7,0,0,3.0), offset_labels=c(0.5,0,0,1), pos_labels = c("center", "center", "left", "center")))
+
+```
+
+The mosaic plot above show the user_type ratio for each borough, and it was in the descending order of the TreeCount. In the above grouped bar plot, we can reconfirm our observations above:"Queens", the borough with most street trees counts, has its biggest user_type as "TreesCount Staff"; "Manhatten", the borough with the least street trees, has its smallest user_type as "Volunteer". It's also observed that "Manhattan" had the most percentage ratio of "Volunteer" user_type, which might as a result of the volunteers' perference to count trees in Manhattan.
+
+Therefore, we can conclued that   
+  1)User_type, the category of user who collected this tree point's data, had different percentage ratio for each borough;
+  2)Different user_type ratio had influence on the final TreeCount result, as "NYC Parks Staff" and "TreesCount Staff" with more professional knowledge would provide a more reliable data, while "Volunteer" with less experience would provide more mistakes. 
+
+Above all, different user_type had different recording criteria, and the five boroughs did not have the identical user_type percentage ratio, which implies that occurance of bias in the given NYC Census dataset.
+  
+####4.Borough vs curb_loc
+
+Plot the mosaic chart to explore the distribution of borough based on curb_loc. "Curb_loc" describes Location of tree bed in relationship to the curb; trees are either along the curb (OnCurb) or offset from the curb (OffsetFromCurb). The order of bough in each group is based on the order of total numbers.
+
+```{r, warning=FALSE, message=FALSE}
+
+fillcolors <- c("gray30","white","lightsalmon4","tan1","gold") 
+vcd::mosaic( borough ~ curb_loc, Tree, gp = gpar(fill = fillcolors), direction = c("v", "h"),tl_labels = c(TRUE, TRUE),labeling = labeling_border(gp_labels = gpar(fontsize = 10),gp_varnames = gpar(fontsize = 12,fontface = 2), rot_labels = c(0, 90, 0, 0), offset_varnames = c(0.7,0,0,2.4), offset_labels=c(0.5,0,0,1), pos_labels = c("center", "center", "left", "center")))
+
+```
+From the mosaic plot above, the distribution of borough based on curb_loc are compared as follows:    
+
+  1)The distributions of borough street trees for different curb_loc group do not have a significant difference;        
+  2)The relative ratio of "Queens" street trees with "OffsetFromCurb" is smaller than that with "OnCurb";     
+  3)The relative ratio of "Manhatten" street trees with "OffsetFromCurb" is greater than that with "OnCurb";  
+  
+In conclusion, considering the above observations with the plot 1, although there is a little difference of distributions in between "OffsetFromCurb" and "OnCurb" group, the difference is not significant. Thus, no significant correlations between "borough" and "curb_loc".
+
+
+####5. Spatial Distribution
+
+In the analysis above, we explore the TreeCount of NYC street trees based on borough, figuring out the difference of TreeCount in five boroughs, and the relationship between certain variables and borough. This provided a basic idea about the distribution of NYC street trees for five borough.
+
+In this section, instead of using the borough as a border to demonstrate count data, "postcode" of each subarea was applied as boudaries in a choroplethic map. 
+
+```{r, warning=FALSE}
+library(devtools)
+library(choroplethr)
+library(choroplethrZip)
+library(ggplot2)
+data("zip.regions")
+tree_summary<-Tree %>% group_by(postcode) %>% summarise(n=n())
+tree_summary<-tree_summary[tree_summary$postcode %in% zip.regions$region,]
+tree_summary<-rename(tree_summary,"region"="postcode","value"="n")
+tree_summary$region<-as.character(tree_summary$region)
+tree_summary$value<-as.numeric(tree_summary$value)
+nyc_fips = c("36005", "36047", "36061", "36081", "36085") 
+
+choro = ZipChoropleth$new(tree_summary)
+choro$title = "2015 NYC Street TreeCount by ZipCode"
+choro$ggplot_scale = scale_fill_brewer(name="TreeCount", palette=2, drop=FALSE)
+choro$set_zoom_zip(state_zoom=NULL,county_zoom = nyc_fips, msa_zoom=NULL, zip_zoom=NULL)
+choro$render()
+
+```
+
+The choropleth map above provided an easy way to visualize how the TreeCount varies across the subregion in NYC by the zipcode. To provide a better perceptual intuition, the map used "green" to represent the TreeCount numbers, and the darker the green color the higher the TreeCount data. 
+
+This choropleth map show the diistribution of street trees in in greater detail，and the visulization based on the map and color density provide a easier way to analysis the dataset.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+library(choroplethrZip)
+data(df_pop_zip)
+
+pop<-df_pop_zip[df_pop_zip$region %in% tree_summary$region,]
+tree_pop<-merge(tree_summary, pop, by = "region")
+tree_pop$value<-tree_pop$value.x/(tree_pop$value.y+1)
+tree_pop_zip<-select(tree_pop, c("region","value"))
+nyc_fips = c("36005", "36047", "36061", "36081", "36085") 
+zip_choropleth(tree_pop_zip,county_zoom = nyc_fips,
+               title       = "Count/pop street trees by zip code, NYC, 2015",
+               legend      = "Count/pop")
+```
+
+
+
+
+
+
+
+```{r}
+tree_pop<-rename(tree_pop,"count"="value.x","pop"="value.y","postcode"="region")
+#tree_pop<-merge(tree_pop, Tree, by = "postcode")
+```
+
+```{r}
+#map<-zip_choropleth(tree_summary,county_zoom = nyc_fips,
+#               title       = "Count street trees by zip code, NYC, 2015",
+#              legend      = "TreeCount")
+#map$ggplot_scale = scale_fill_brewer(palette=2)
+
+```
+
+
+
+```{r, warning=FALSE, message=FALSE}
+Tree$borough<-factor(Tree$borough,levels=c("Queens", "Brooklyn", "Staten Island", "Bronx","Manhattan"))
+ggplot(Tree, aes(x = user_type, fill = borough)) + 
+    geom_bar(position = "dodge",color="black") + 
+  scale_fill_manual(values = c("violet","lightblue","gold","dimgray","darkolivegreen3")  )
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+Tree$borough<-factor(Tree$borough,levels=c("Queens", "Brooklyn", "Staten Island", "Bronx","Manhattan"))
+ggplot(Tree, aes(x = user_type, fill = borough)) + 
+    geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]), position="dodge" ,color="black") +
+  scale_fill_manual(values = c("violet","lightblue","gold","dimgray","darkolivegreen3")  )
+```
+
+
