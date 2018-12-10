@@ -1,0 +1,163 @@
+---
+title: "Alive percent/"
+author: "Jie Zheng"
+date: "12/1/2018"
+output: rmarkdown::github_document
+---
+
+```{r}
+Tree<-read.csv("tree.csv")
+library(tidyverse)
+library(dplyr)
+library(vcd)
+library(grid)
+library(RColorBrewer)
+library(scales)
+library(viridis)
+library(ggthemes)
+
+
+
+```
+
+###Main Analysis
+
+Part 1: Whether tree species distribution depend on the boroughs
+
+(a)summary tree species information in our data set
+```{r}
+summary(Tree$spc_common)
+```
+Table1. Summary of the number of counts for each species.
+
+
+From table 1, we find the number of species more than 100, and the range of species from highest count number to the lowest count number is 86,831.Therefore, we want to subset of the species which total number of counts with those species has large proportion on our total species count number. Then we select  top 10 species without choosing species is blank(missing data with species).
+
+
+(2)subset with species with top 10 number of counts
+```{r}
+Tree$species<-Tree$spc_common
+for (i in levels(Tree$spc_common)){
+  if ((i %in% c("London planetree", "honeylocust","Callery pear","pin oak","Norway maple","littleleaf linden",
+  "cherry","Japanese zelkova","ginkgo","Sophora"))==FALSE){
+    Tree<-Tree %>% 
+      mutate(species = fct_recode(species,OTHER=i))
+  }
+}
+trees<-subset(Tree, species != "OTHER")
+trees$species<-factor(trees$species)
+```
+
+
+(3)plot mosaic plot to see whether species’ distribution depend on boroughs.
+```{r fig.height=15,fig.width=15}
+fillcolors <- brewer.pal(10, "Set3")
+orderlevel = c("Queens","Brooklyn","Staten Island","Bronx","Manhattan")
+orderlevel1 = c("London planetree", "honeylocust","Callery pear","pin oak","Norway maple","littleleaf linden","cherry","Japanese zelkova","ginkgo","Sophora")
+trees$borough = factor(trees$borough, levels = orderlevel)
+trees$species = factor(trees$species , levels = orderlevel1)
+vcd::mosaic(species ~ borough, trees,
+            direction = c("v", "h"),
+            rot_labels=c(0,0,0,70),
+            gp = gpar(fill = fillcolors),
+            main = "mosaic plot for top 10 count number of Tree species depend on different boroughs") 
+
+```
+Figure 1. Top ten count numbers of tree species’ distribution depend on boroughs
+
+
+From figure 1. We can see top ten count numbers of tree species’ distribution depend on boroughs.
+(a)Top ten count numbers of tree species’ distribution on Brooklyn and Queens are very similar. We consider the reason of this is that both two boroughs is living areas, so the damage rate from human to trees are very similar.
+(b)Top ten count numbers of tree species’ distribution on Bronx and Manhattan are very similar. We consider the reason of this is that both two boroughs are very close, so the soil condition might be very similar .
+(c)Top ten count numbers of tree species’ distribution on Staten Island is so different from other boroughs, the reason of this might be the island is isolated place, the damage rate from hunnam, soil condition and other conditions might be different from other boroughs.
+
+
+
+Part 2: The Alive percent for trees whether depend on user_type, boroughs,depend on top ten tree species 
+
+(1)Firstly, we just simply focus on the distribution of the status variable(Three levels: Alive, Dead, Stump)
+```{r}
+ggplot(Tree, aes(status)) +
+geom_histogram(stat='count',fill="lightblue") +
+ggtitle("Three status(alive,dead,stump) counts for all trees")
+```
+Figure 2.Bar chart for counts of three status(alive,dead,stump) for all trees
+
+From figure 2. We can see the count number of alive trees is much higher than dead trees and trees with stump conditions. What is more, the count number of dead tree is roughly equals to trees with stump condition.
+
+
+(2)Whether this status distribution depend on user_type(which group records data)
+```{r}
+ggplot(Tree, aes(x = status)) +
+geom_histogram(stat='count',fill="lightblue")  +
+facet_wrap(~user_type)+
+ggtitle("Tree status(alive,dead,stump) counts groupded by three groups who record" )  +
+ylab("count number")
+```
+Figure3. All trees status(alive,dead, stump) counts number group by user_type
+
+
+From figure 3, we can see the same status distribution in figure 2, but the alive trees percent in different group might be different roughly form graph.Therefore, there might be bias for different group to record data. We need further explore, changing the counts number to alive percent from the status variable.
+
+
+
+(3)Draw bar-chart for alive percent group by different user_type.
+```{r}
+user_percent<-Tree%>%group_by(user_type)%>%
+summarize(total = n(),alive_tree_user = sum(status=='Alive'))%>%
+mutate(alive_percent_user = alive_tree_user/total)
+user_percent$user_type <- factor(user_percent$user_type, levels = user_percent$user_type[order(-user_percent$alive_percent_user)])
+user_plot_alive<-ggplot(user_percent,aes(x = user_type, y = alive_percent_user))+
+geom_bar(stat = "identity",fill="lightblue")+
+ylab("Alive percent")+
+ggtitle("Alive percent for different use_type")
+user_plot_alive
+```
+Figure 4. Alive percent group by different user_type(which group record data)
+
+
+From figure 4, after changing counts number of alive trees to alive percent, we can see the differences between each groups almost do not exist. So, we know that the alive percent of tree does not depend on user_type.
+
+
+(4) Draw alive percent bar chart grouped by boroughs, and draw alive percent bar chart grouped by top ten tree species .
+```{r}
+borough_percent<-Tree%>%group_by(borough)%>%
+summarize(total = n(),alive_tree_borough = sum(status=='Alive'))%>%
+mutate(alive_percent_borough = alive_tree_borough/total)
+borough_percent$borough <- factor(borough_percent$borough, levels = borough_percent$borough[order(-borough_percent$alive_percent_borough)])
+borough_plot_alive<-ggplot(borough_percent,aes(x = borough, y = alive_percent_borough))+
+geom_bar(stat = "identity",fill="lightblue")+
+ylab("Alive percent")+
+ggtitle("Alive percent for different boroughs")
+borough_plot_alive
+```
+Figure 5. Alive percent of trees group by boroughs.
+
+
+
+```{r fig.height=7, fig.width=7}
+species_percent<-trees%>%group_by(species)%>%
+summarize(total = n(),alive_species = sum(status=='Alive'))%>%
+mutate(alive_percent_species = alive_species/total)
+species_percent$species <- factor(species_percent$species, levels = species_percent$species[order(-species_percent$alive_percent_species)])
+species_plot_alive<-ggplot(species_percent,aes(x = species, y = alive_percent_species))+
+geom_bar(stat = "identity",fill="lightblue")+
+ylab("Alive percent")+
+ggtitle("Alive percent for different species")
+species_plot_alive
+```
+From above two bar chart, we see status (alive percent) not depends on boroughs and top 10 tree species
+
+
+
+
+
+
+
+
+
+
+
+
+
+
