@@ -9,3 +9,5 @@ Data Description: https://data.cityofnewyork.us/api/views/uvpi-gqnh/files/8705bf
 
 ## EDAV Report
 
+## Interactive Component
+https://edvtreeanalysis.shinyapps.io/application/
