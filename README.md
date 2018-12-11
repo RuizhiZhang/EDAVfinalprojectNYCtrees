@@ -8,7 +8,7 @@ Download: https://data.cityofnewyork.us/api/views/uvpi-gqnh/rows.csv?accessType=
 Data Description: https://data.cityofnewyork.us/api/views/uvpi-gqnh/files/8705bfd6-993c-40c5-8620-0c81191c7e25?download=true&filename=StreetTreeCensus2015TreesDataDictionary20161102.pdf
 
 ## EDAV Report
-https://github.com/RuizhiZhang/EDAVfinalprojectNYCtrees/blob/master/EDAV_Final_Project_NYC_Tree.pdf
+
 
 ## Interactive Component
 https://edvtreeanalysis.shinyapps.io/application/
